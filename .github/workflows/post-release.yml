@@ -56,7 +56,10 @@ jobs:
               "Release notes here:\n" +
               "\(.html_url)\n" +
               "\n" +
-              "\(.body)\n"')"
+              "---\n" +
+              "\n" +
+              "\(.body | sub("^(?<sha>[0-9a-f]{7,})"; "[`\(.sha)`](" +
+                  "https://github.com/\(env.LFS_REPO)/commit/\(.sha))"))"')"
 
           curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
             "$GITHUB_API_URL/repos/$LFS_FUSE_REPO/pulls" \
