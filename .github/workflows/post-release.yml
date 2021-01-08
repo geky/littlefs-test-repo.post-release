@@ -46,12 +46,24 @@ jobs:
           git push origin lfs-$LFS_VERSION --force
 
           # create PR
+          export TITLE="Bring in littlefs $LFS_VERSION"
+          export BODY="$(curl -sS \
+            "$GITHUB_API_URL/repos/$LFS_REPO/releases/tags/$LFS_VERSION" \
+            | jq -r '
+              "Beep boop, this is an automatic PR to bring in " +
+                "littlefs \(env.LFS_VERSION)\n" +
+              "\n" +
+              "Release notes here:\n" +
+              "\(.html_url)\n" +
+              "\n" +
+              "\(.body)\n"')"
+
           curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
             "$GITHUB_API_URL/repos/$LFS_FUSE_REPO/pulls" \
             -d "$(jq -n '{
-              title: ("Bring in littlefs " + env.LFS_VERSION),
-              head: ("${{secrets.BOT_USERNAME}}:lfs-" + env.LFS_VERSION),
               base: "master",
-              body: "TODO",
+              head: ("${{secrets.BOT_USERNAME}}:lfs-" + env.LFS_VERSION),
+              title: env.TITLE,
+              body: env.BODY,
               maintainer_can_modify: true}' \
               | tee /dev/stderr)"
