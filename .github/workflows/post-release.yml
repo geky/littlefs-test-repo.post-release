@@ -58,7 +58,9 @@ jobs:
               "\n" +
               "---\n" +
               "\n" +
-              "\(.body | gsub("(^|\\n)(?<sha>[0-9a-f]{7,})"; "[`\(.sha)`](" +
+              "\(.body | gsub(
+                "(^|(?<=\\n))(?<sha>[0-9a-f]{7,})";
+                "[`\(.sha)`](" +
                   "https://github.com/\(env.LFS_REPO)/commit/\(.sha))"))"')"
 
           curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
