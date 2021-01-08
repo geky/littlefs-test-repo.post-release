@@ -29,13 +29,13 @@ jobs:
         run: |
           # we need to create a PR from somewhere, so use the dependency
           # repo itself as a staging area
-          git fetch https://github.com/$LFS_FUSE_REPO master
+          git fetch --unshallow https://github.com/$LFS_FUSE_REPO master
           git checkout FETCH_HEAD -B lfs-$LFS_VERSION
 
           # merge the littlefs subtree
           git config user.name ${{secrets.BOT_USERNAME}}
           git config user.email ${{secrets.BOT_EMAIL}}
-          git fetch https://github.com/$LFS_REPO $LFS_VERSION
+          git fetch --unshallow https://github.com/$LFS_REPO $LFS_VERSION
           git subtree merge --squash --prefix=littlefs FETCH_HEAD \
             -m "Merge release $LFS_VERSION from $LFS_REPO"
 
@@ -53,4 +53,4 @@ jobs:
               base: ("${{secrets.BOT_USERNAME}}:lfs-" + env.LFS_VERSION),
               body: "TODO",
               maintainer_can_modify: true}' \
-              | tee /dev/stderr)" > /dev/null
+              | tee /dev/stderr)"

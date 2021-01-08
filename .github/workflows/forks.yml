@@ -25,4 +25,4 @@ jobs:
           curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
             "$GITHUB_API_URL/repos/${{matrix.repo}}/forks" \
             || true
-              
+
