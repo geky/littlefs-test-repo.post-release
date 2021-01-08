@@ -1,0 +1,28 @@
+name: forks
+on:
+  push:
+    branches: [master]
+
+# The GitHub API can only create forks asynchronously, which means we
+# can't really create forks on demand. This combined with the requirement
+# that PRs can only be created from forks means we need to create forks
+# before running the release script.
+#
+# Creating forks every push to master makes sense, as there's no real reason
+# to delete the staging forks
+jobs:
+  forks:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - geky/littlefs-fuse-test-repo
+
+    steps:
+      - name: create-fork
+        run: |
+          curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+            "$GITHUB_API_URL/repos/${{matrix.repo}}/forks" \
+            || true
+              

@@ -1,0 +1,56 @@
+name: post-release
+on:
+  repository_dispatch:
+    types: [post-release]
+
+# List of post-release jobs, mostly updating dependencies based on the
+# new release.
+#
+# Note that all jobs MUST set continue-on-error: true. If one job fails it
+# shouldn't stop the release for the other dependencies.
+jobs:
+  # Create a PR bringing in the new release for littlefs-fuse
+  littlefs-fuse:
+    runs-on: ubuntu-18.04
+    continue-on-error: true
+    env:
+      LFS_REPO: ${{github.event.client_payload.repo}}
+      LFS_VERSION: ${{github.event.client_payload.version}}
+      LFS_FUSE_REPO: geky/littlefs-fuse-test-repo
+      LFS_FUSE_BOT_REPO: ${{secrets.BOT_USERNAME}}/littlefs-fuse-test-repo
+    steps:
+      # checkout the bot fork we plan to use for staging PRs
+      - uses: actions/checkout@v2
+        with:
+          token: ${{secrets.BOT_TOKEN}}
+          repository: ${{env.LFS_FUSE_BOT_REPO}}
+
+      - name: merge-littlefs
+        run: |
+          # we need to create a PR from somewhere, so use the dependency
+          # repo itself as a staging area
+          git fetch https://github.com/$LFS_FUSE_REPO master
+          git checkout FETCH_HEAD -B lfs-$LFS_VERSION
+
+          # merge the littlefs subtree
+          git config user.name ${{secrets.BOT_USERNAME}}
+          git config user.email ${{secrets.BOT_EMAIL}}
+          git fetch https://github.com/$LFS_REPO $LFS_VERSION
+          git subtree merge --squash --prefix=littlefs FETCH_HEAD \
+            -m "Merge release $LFS_VERSION from $LFS_REPO"
+
+      - name: create-pr
+        run: |
+          # stage PR
+          git push origin lfs-$LFS_VERSION --force
+
+          # create PR
+          curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+            "$GITHUB_API_URL/repos/$LFS_FUSE_REPO/pulls" \
+            -d "$(jq -n '{
+              title: ("Bring in littlefs " + env.LFS_VERSION),
+              head: "master",
+              base: ("${{secrets.BOT_USERNAME}}:lfs-" + env.LFS_VERSION),
+              body: "TODO",
+              maintainer_can_modify: true}' \
+              | tee /dev/stderr)" > /dev/null
