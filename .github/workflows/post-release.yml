@@ -50,8 +50,8 @@ jobs:
             "$GITHUB_API_URL/repos/$LFS_FUSE_REPO/pulls" \
             -d "$(jq -n '{
               title: ("Bring in littlefs " + env.LFS_VERSION),
-              head: "master",
-              base: ("${{secrets.BOT_USERNAME}}:lfs-" + env.LFS_VERSION),
+              head: ("${{secrets.BOT_USERNAME}}:lfs-" + env.LFS_VERSION),
+              base: "master",
               body: "TODO",
               maintainer_can_modify: true}' \
               | tee /dev/stderr)"
