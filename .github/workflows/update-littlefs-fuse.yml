@@ -1,25 +1,42 @@
 name: post-release
 on:
+  # handle forks on push
+  push:
+    branches: [master]
+  # handle updates on post-release
   repository_dispatch:
     types: [post-release]
 
-# List of post-release jobs, mostly updating dependencies based on the
-# new release.
-#
-# Note that all jobs MUST set continue-on-error: true. If one job fails it
-# shouldn't stop the release for the other dependencies.
+env:
+  LFS_FUSE_REPO: geky/littlefs-fuse-test-repo
+  LFS_FUSE_BOT_REPO: ${{secrets.BOT_USERNAME}}/littlefs-fuse-test-repo
+
 jobs:
-  # Create a PR bringing in the new release for littlefs-fuse
-  littlefs-fuse:
+  # The GitHub API can only create forks asynchronously, and GitHub requires
+  # a fork in order to make a PR.
+  #
+  # To work around this we just create a staging fork when we push this
+  # workflow to GitHub. It's not like there's a reason to ever delete
+  # these staging forks.
+  littlefs-fuse-fork:
     runs-on: ubuntu-18.04
-    continue-on-error: true
+    if: github.event_name == 'push'
+    steps:
+      - name: create-fork
+        run: |
+          curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+            "$GITHUB_API_URL/repos/$LFS_FUSE_REPO/forks" \
+            || true
+
+  # create PR to bring in the new release
+  littlefs-fuse-update:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'repository_dispatch'
     env:
       LFS_REPO: ${{github.event.client_payload.repo}}
       LFS_VERSION: ${{github.event.client_payload.version}}
-      LFS_FUSE_REPO: geky/littlefs-fuse-test-repo
-      LFS_FUSE_BOT_REPO: ${{secrets.BOT_USERNAME}}/littlefs-fuse-test-repo
     steps:
-      # checkout the bot fork we plan to use for staging PRs
+      # checkout the staging fork we plan to use for PRs
       - uses: actions/checkout@v2
         with:
           token: ${{secrets.BOT_TOKEN}}
@@ -46,22 +63,31 @@ jobs:
           git push origin lfs-$LFS_VERSION --force
 
           # create PR
+          #
+          # note we tweak the release notes a bit to
+          # - link to release notes
+          # - keep the last header, this contains the automatic results and
+          #   is unlikely to need editing later
+          # - fix sha links to they link cross-repo (that's the ugly regex)
           export TITLE="Bring in littlefs $LFS_VERSION"
           export BODY="$(curl -sS \
             "$GITHUB_API_URL/repos/$LFS_REPO/releases/tags/$LFS_VERSION" \
             | jq -r '
               "Beep boop, this is an automatic PR to bring in " +
-                "littlefs \(env.LFS_VERSION)\n" +
+                "littlefs \(env.LFS_VERSION).\n" +
               "\n" +
-              "Release notes here:\n" +
+              "### Release notes\n" +
+              "\n" +
               "\(.html_url)\n" +
               "\n" +
-              "---\n" +
+              "### Changes\n" +
               "\n" +
-              "\(.body | gsub(
-                "(^|(?<=\\n))(?<sha>[0-9a-f]{7,})";
-                "[`\(.sha)`](" +
-                  "https://github.com/\(env.LFS_REPO)/commit/\(.sha))"))"')"
+              "\(.body
+                | split("(^|(?<=\\n))###.*?\\n"; "")[-1]
+                | gsub(
+                  "(^|(?<=\\n))(?<sha>[0-9a-f]{7,})";
+                  "[`\(.sha)`](https://github.com/" + 
+                    "\(env.LFS_REPO)/commit/\(.sha))"))"')"
 
           curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
             "$GITHUB_API_URL/repos/$LFS_FUSE_REPO/pulls" \
@@ -72,3 +98,4 @@ jobs:
               body: env.BODY,
               maintainer_can_modify: true}' \
               | tee /dev/stderr)"
+
