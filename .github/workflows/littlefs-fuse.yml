@@ -75,7 +75,7 @@ jobs:
             | jq -r '
               "Beep boop, this is an automatic PR to bring in " +
                 "littlefs \(env.LFS_VERSION). My script is running " +
-                "[here](https://github.com/\(env.GITHUB_REPOSITORY)/"
+                "[here](https://github.com/\(env.GITHUB_REPOSITORY)/" +
                   "runs/\(env.GITHUB_RUN_ID)?check_suite_focus=true).\n" +
               "\n" +
               "### Release notes\n" +
