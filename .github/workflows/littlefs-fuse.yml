@@ -74,7 +74,9 @@ jobs:
             "$GITHUB_API_URL/repos/$LFS_REPO/releases/tags/$LFS_VERSION" \
             | jq -r '
               "Beep boop, this is an automatic PR to bring in " +
-                "littlefs \(env.LFS_VERSION).\n" +
+                "littlefs \(env.LFS_VERSION). My script is running " +
+                "[here](https://github.com/\(env.GITHUB_REPOSITORY)/"
+                  "runs/\(env.GITHUB_RUN_ID)?check_suite_focus=true).\n" +
               "\n" +
               "### Release notes\n" +
               "\n" +
