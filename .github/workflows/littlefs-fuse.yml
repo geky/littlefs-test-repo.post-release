@@ -85,8 +85,9 @@ jobs:
                 "littlefs [`\(env.LFS_VERSION)`](\(.html_url)). " +
                 "My script is running [here](https://github.com/" +
                   "\(env.GITHUB_REPOSITORY)/actions/" +
-                  "runs/\(env.GITHUB_RUN_ID)). Maintainers should " +
-                  "be able to edit this PR if needed.\n" +
+                  "runs/\(env.GITHUB_RUN_ID)).\n" +
+              "\n" +
+              "Maintainers should be able to edit this PR if needed.\n" +
               "\n" +
               "### Release notes\n" +
               "\n" +
@@ -95,7 +96,7 @@ jobs:
               "### Changes\n" +
               "\n" +
               "\((.body | capture(
-                  "(^|\\n)### +Changes\\s*\\n(?<changes>.*?)\\s*(###|$)";
+                  "(^|\\n)#+ +Changes\\s*\\n(?<changes>.*?)\\s*(###|$)";
                   "m").changes)
                 // .body)\n"')"
 
