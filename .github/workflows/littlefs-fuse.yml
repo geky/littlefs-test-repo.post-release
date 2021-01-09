@@ -6,6 +6,11 @@ on:
   # handle updates on post-release
   repository_dispatch:
     types: [post-release]
+  # allow manual trigger
+  workflow_dispatch:
+    inputs:
+      repo: {required: true}
+      version: {required: true}
 
 env:
   LFS_FUSE_REPO: geky/littlefs-fuse-test-repo
@@ -33,8 +38,10 @@ jobs:
     runs-on: ubuntu-18.04
     if: github.event_name == 'repository_dispatch'
     env:
-      LFS_REPO: ${{github.event.client_payload.repo}}
-      LFS_VERSION: ${{github.event.client_payload.version}}
+      LFS_REPO: ${{github.event.client_payload.repo ||
+        github.event.inputs.repo}}
+      LFS_VERSION: ${{github.event.client_payload.version ||
+        github.event.inputs.version}}
     steps:
       # checkout the staging fork we plan to use for PRs
       - uses: actions/checkout@v2
