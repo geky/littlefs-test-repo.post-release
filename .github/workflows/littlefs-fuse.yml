@@ -60,7 +60,7 @@ jobs:
       - name: create-pr
         run: |
           # stage PR
-          git push origin lfs-$LFS_VERSION
+          git push origin lfs-$LFS_VERSION --force
 
           # create PR
           #
