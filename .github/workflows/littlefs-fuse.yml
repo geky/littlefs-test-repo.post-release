@@ -1,4 +1,4 @@
-name: update-littlefs-fuse
+name: littlefs-fuse
 on:
   # handle forks on push
   push:
