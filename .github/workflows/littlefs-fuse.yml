@@ -72,19 +72,20 @@ jobs:
 
           # create PR
           #
-          # note we tweak the release notes a bit to
-          # - link to release notes
-          # - keep the last header, this contains the automatic results and
-          #   is unlikely to need editing later
-          # - fix sha links to they link cross-repo (that's the ugly regex)
+          # Note if there's a "Changes" section we use that, otherwise we
+          # just copy the full release notes. The "Changes" section usually
+          # contains the machine generated info on what's changed and probably
+          # won't be editted later
+          #
           export TITLE="Bring in littlefs $LFS_VERSION"
           export BODY="$(curl -sS \
             "$GITHUB_API_URL/repos/$LFS_REPO/releases/tags/$LFS_VERSION" \
             | jq -r '
               "Beep boop, this is an automatic PR to bring in " +
-                "littlefs \(env.LFS_VERSION). My script is running " +
-                "[here](https://github.com/\(env.GITHUB_REPOSITORY)/" +
-                  "actions/runs/\(env.GITHUB_RUN_ID)).\n" +
+                "littlefs [`\(env.LFS_VERSION)`](\(.html_url)). " +
+                "My script is running [here](https://github.com/" +
+                  "\(env.GITHUB_REPOSITORY)/actions/" +
+                  "runs/\(env.GITHUB_RUN_ID)).\n" +
               "\n" +
               "### Release notes\n" +
               "\n" +
@@ -92,12 +93,10 @@ jobs:
               "\n" +
               "### Changes\n" +
               "\n" +
-              "\(.body
-                | split("(^|(?<=\\n))###.*?\\n"; "")[-1]
-                | gsub(
-                  "(^|(?<=\\n))(?<sha>[0-9a-f]{7,})";
-                  "[`\(.sha)`](https://github.com/" + 
-                    "\(env.LFS_REPO)/commit/\(.sha))"))"')"
+              "\((.body | capture(
+                  "(^|\\n)### +Changes\\s*\\n(?<changes>.*?)\\s*(###|$)";
+                  "m").changes)
+                // .body)\n"')"
 
           [ -n "$TITLE" -a -n "$BODY" ] || exit 0
           curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
